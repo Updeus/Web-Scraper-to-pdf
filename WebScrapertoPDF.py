@@ -4,6 +4,14 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
 def scrape_to_pdf(url, output_filename):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
+    }
+
+    # Send HTTP request to the URL with custom headers
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()  # Raise an exception for HTTP errors
+
     # Send HTTP request to the URL
     response = requests.get(url)
     response.raise_for_status()  
@@ -35,6 +43,6 @@ def scrape_to_pdf(url, output_filename):
 
 
 # Example usage
-url = 'enterurlhere.com'
+url = 'test.com'
 output_filename = 'chapter_output.pdf'
 scrape_to_pdf(url, output_filename)
