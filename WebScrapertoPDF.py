@@ -31,7 +31,7 @@ def scrape_to_pdf(base_url, start_chapter, num_chapters, output_filename):
 
                 # Extract titles
                 novel_title = soup.find('a', class_='booktitle').text.strip() if soup.find('a', class_='booktitle') else "Unknown Novel"
-                chapter_title = soup.find('div', class_='chapter-title').text.strip() if soup.find('div', class_='chapter-title') else f"Chapter {i}"
+                chapter_title = soup.find('span', class_='chapter-title').text.strip() if soup.find('span', class_='chapter-title') else f"Chapter {i}"
 
                 # Formatting styles
                 title_style = ParagraphStyle('TitleStyle', parent=styles['Title'], fontSize=18, spaceAfter=6, alignment=1)
@@ -68,6 +68,6 @@ def scrape_to_pdf(base_url, start_chapter, num_chapters, output_filename):
 # Example usage
 base_url = 'https://www.testurl'
 start_chapter = 1
-num_chapters = 10
+num_chapters = 5
 output_filename = 'story.pdf'
 scrape_to_pdf(base_url, start_chapter, num_chapters, output_filename)
