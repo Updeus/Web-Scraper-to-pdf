@@ -21,10 +21,18 @@ def process_chapter(chapter_html, styles, chapter_num):
     chapter_title = soup.find('span', class_='chapter-title').text.strip() if soup.find('span', class_='chapter-title') else f"Chapter {chapter_num}"
     content_div = soup.find('div', id='chapter-container')
 
+    # Extract novel title if first chapter
+    if chapter_num == 1:
+        novel_title = soup.find('a', class_='booktitle').text.strip() if soup.find('a', class_='booktitle') else "Unknown Novel"
+
     # Formatting styles
     title_style = ParagraphStyle('TitleStyle', parent=styles['Title'], fontSize=18, spaceAfter=6, alignment=1)
     chapter_style = ParagraphStyle('ChapterStyle', parent=styles['Title'], fontSize=16, spaceBefore=12, spaceAfter=12, alignment=1)
     story = [Paragraph(chapter_title, chapter_style)]
+
+    # Add novel title for the first chapter
+    if chapter_num == 1:
+        story.insert(0, Paragraph(novel_title, title_style))
 
     # Process content
     if content_div:
@@ -34,19 +42,19 @@ def process_chapter(chapter_html, styles, chapter_num):
             text = para.get_text(strip=True)
             p = Paragraph(text, style)
             story.append(p)
-            story.append(Spacer(1, 12))
-    return chapter_num, story
+            story.append(Spacer(1, 3))
+    return chapter_num, story, novel_title if chapter_num == 1 else None
 
-def scrape_to_pdf(base_url, start_chapter, num_chapters, output_filename):
+def scrape_to_pdf(base_url, start_chapter, num_chapters):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0. Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
     }
 
-    doc = SimpleDocTemplate(output_filename, pagesize=letter)
     styles = getSampleStyleSheet()
     chapter_contents = {}  # Dictionary to store chapter content by chapter number
     delays = [random.randint(1, 5) for _ in range(num_chapters)]
     start_time = time.time()  # Start timing the operation
+    novel_title = "Unknown Novel"
 
     chapters_info = [(f"{base_url}/chapter-{i}", i, delays[i - start_chapter]) for i in range(start_chapter, start_chapter + num_chapters)]
 
@@ -57,12 +65,16 @@ def scrape_to_pdf(base_url, start_chapter, num_chapters, output_filename):
             info = future_to_info[future]
             try:
                 html = future.result()
-                chapter_num, chapter_elements = process_chapter(html, styles, info[1])
+                chapter_num, chapter_elements, fetched_novel_title = process_chapter(html, styles, info[1])
+                if fetched_novel_title:
+                    novel_title = fetched_novel_title  # Set novel title from the first chapter
                 chapter_contents[chapter_num] = chapter_elements  # Store chapters by number
             except Exception as exc:
                 print(f"{info[0]} generated an exception: {exc}")
 
-    # Append the collected stories to the document in the correct order
+    # Build the PDF with all chapters
+    output_filename = f"{novel_title}.pdf"  # Use novel title for the PDF filename
+    doc = SimpleDocTemplate(output_filename, pagesize=letter)
     ordered_chapters = []
     for chapter_num in sorted(chapter_contents.keys()):
         ordered_chapters.extend(chapter_contents[chapter_num])
@@ -74,8 +86,7 @@ def scrape_to_pdf(base_url, start_chapter, num_chapters, output_filename):
     print(f"Total operation time: {total_time:.2f} seconds.")
 
 # Example usage
-base_url = 'https://www.testsite/novel/novelTitle'
+base_url = 'https://www.testurl.com/novel/noveltitle'
 start_chapter = 1
 num_chapters = 10
-output_filename = 'story.pdf'
-scrape_to_pdf(base_url, start_chapter, num_chapters, output_filename)
+scrape_to_pdf(base_url, start_chapter, num_chapters)
