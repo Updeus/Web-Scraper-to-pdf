@@ -8,11 +8,20 @@ import time
 from tqdm import tqdm  # Progress bar library
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-def fetch_chapter(chapter_url, headers, delay):
+def fetch_chapter(chapter_url, headers, delay, retry=0):
     time.sleep(delay)  # Implement the delay
-    response = requests.get(chapter_url, headers=headers)
-    response.raise_for_status()  # Check for HTTP errors
-    return response.text
+    try:
+        response = requests.get(chapter_url, headers=headers)
+        response.raise_for_status()  # Check for HTTP errors
+        return response.text
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 429 and retry < 5:  # Check if it's a 'Too Many Requests' error
+            wait = 2 ** retry  # Exponential backoff
+            print(f"Rate limit exceeded. Retrying in {wait} seconds...")
+            time.sleep(wait)
+            return fetch_chapter(chapter_url, headers, delay, retry+1)  # Retry with increased backoff
+        else:
+            raise
 
 def process_chapter(chapter_html, styles, chapter_num):
     soup = BeautifulSoup(chapter_html, 'html.parser')
@@ -47,11 +56,11 @@ def process_chapter(chapter_html, styles, chapter_num):
 
 def scrape_to_pdf(base_url, start_chapter, num_chapters):
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0. Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
     }
-
     styles = getSampleStyleSheet()
     chapter_contents = {}  # Dictionary to store chapter content by chapter number
+    failed_chapters = []   # List to store failed chapter fetch attempts
     delays = [random.randint(1, 5) for _ in range(num_chapters)]
     start_time = time.time()  # Start timing the operation
     novel_title = "Unknown Novel"
@@ -71,7 +80,22 @@ def scrape_to_pdf(base_url, start_chapter, num_chapters):
                 chapter_contents[chapter_num] = chapter_elements  # Store chapters by number
             except Exception as exc:
                 print(f"{info[0]} generated an exception: {exc}")
+                failed_chapters.append(info)  # Add to failed chapters for retry
 
+    # Retry failed chapters
+    if failed_chapters:
+        print("Retrying failed chapters...")
+        with ThreadPoolExecutor(max_workers=6) as executor:
+            retry_future_to_info = {executor.submit(fetch_chapter, info[0], headers, 10): info for info in failed_chapters}  # Increased delay for retry
+            for future in tqdm(as_completed(retry_future_to_info), total=len(retry_future_to_info), desc="Retrying Chapters", unit="chapter"):
+                info = retry_future_to_info[future]
+                try:
+                    html = future.result()
+                    chapter_num, chapter_elements, _ = process_chapter(html, styles, info[1])
+                    chapter_contents[chapter_num] = chapter_elements  # Store retried chapters
+                except Exception as exc:
+                    print(f"Retry failed for {info[0]} with exception: {exc}")
+                    
     # Build the PDF with all chapters
     output_filename = f"{novel_title}.pdf"  # Use novel title for the PDF filename
     doc = SimpleDocTemplate(output_filename, pagesize=letter)
@@ -86,7 +110,7 @@ def scrape_to_pdf(base_url, start_chapter, num_chapters):
     print(f"Total operation time: {total_time:.2f} seconds.")
 
 # Example usage
-base_url = 'https://www.testurl.com/novel/noveltitle'
+base_url = 'https://www.lightnovelpub.com/novel/shadow-slave-1365'
 start_chapter = 1
-num_chapters = 10
+num_chapters = 1578
 scrape_to_pdf(base_url, start_chapter, num_chapters)
