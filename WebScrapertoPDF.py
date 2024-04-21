@@ -35,16 +35,16 @@ def process_chapter(chapter_html, styles, chapter_num):
             p = Paragraph(text, style)
             story.append(p)
             story.append(Spacer(1, 12))
-    return story
+    return chapter_num, story
 
 def scrape_to_pdf(base_url, start_chapter, num_chapters, output_filename):
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0. Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
     }
 
     doc = SimpleDocTemplate(output_filename, pagesize=letter)
     styles = getSampleStyleSheet()
-    Story = []  # This will collect all the story elements
+    chapter_contents = {}  # Dictionary to store chapter content by chapter number
     delays = [random.randint(1, 5) for _ in range(num_chapters)]
     start_time = time.time()  # Start timing the operation
 
@@ -57,20 +57,24 @@ def scrape_to_pdf(base_url, start_chapter, num_chapters, output_filename):
             info = future_to_info[future]
             try:
                 html = future.result()
-                chapter = process_chapter(html, styles, info[1])
-                Story.extend(chapter)  # Append chapter content to the story list
+                chapter_num, chapter_elements = process_chapter(html, styles, info[1])
+                chapter_contents[chapter_num] = chapter_elements  # Store chapters by number
             except Exception as exc:
                 print(f"{info[0]} generated an exception: {exc}")
 
-    # Build the PDF with all chapters after they've all been appended to the Story
-    doc.build(Story)
+    # Append the collected stories to the document in the correct order
+    ordered_chapters = []
+    for chapter_num in sorted(chapter_contents.keys()):
+        ordered_chapters.extend(chapter_contents[chapter_num])
+
+    doc.build(ordered_chapters)  # Build the document once with the complete ordered story content
 
     total_time = time.time() - start_time  # Calculate the total operation time
     print(f"PDF created successfully: {output_filename}")
     print(f"Total operation time: {total_time:.2f} seconds.")
 
 # Example usage
-base_url = 'https://www.testurl'
+base_url = 'https://www.testsite/novel/novelTitle'
 start_chapter = 1
 num_chapters = 10
 output_filename = 'story.pdf'
