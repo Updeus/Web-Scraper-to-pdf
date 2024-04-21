@@ -34,7 +34,7 @@ def process_chapter(chapter_html, styles, chapter_num):
             text = para.get_text(strip=True)
             p = Paragraph(text, style)
             story.append(p)
-            story.append(Spacer(1, 3))
+            story.append(Spacer(1, 12))
     return story
 
 def scrape_to_pdf(base_url, start_chapter, num_chapters, output_filename):
@@ -44,7 +44,7 @@ def scrape_to_pdf(base_url, start_chapter, num_chapters, output_filename):
 
     doc = SimpleDocTemplate(output_filename, pagesize=letter)
     styles = getSampleStyleSheet()
-    Story = [None] * num_chapters  # Initialize a list to store results in order
+    Story = []  # This will collect all the story elements
     delays = [random.randint(1, 5) for _ in range(num_chapters)]
     start_time = time.time()  # Start timing the operation
 
@@ -58,14 +58,12 @@ def scrape_to_pdf(base_url, start_chapter, num_chapters, output_filename):
             try:
                 html = future.result()
                 chapter = process_chapter(html, styles, info[1])
-                Story[info[1] - start_chapter] = chapter  # Store the chapter in the correct order
+                Story.extend(chapter)  # Append chapter content to the story list
             except Exception as exc:
                 print(f"{info[0]} generated an exception: {exc}")
 
-    # Append the collected stories to the document in the correct order
-    for chapter_content in Story:
-        if chapter_content is not None:  # Ensure there are no None values from failed fetches
-            doc.build(chapter_content)
+    # Build the PDF with all chapters after they've all been appended to the Story
+    doc.build(Story)
 
     total_time = time.time() - start_time  # Calculate the total operation time
     print(f"PDF created successfully: {output_filename}")
