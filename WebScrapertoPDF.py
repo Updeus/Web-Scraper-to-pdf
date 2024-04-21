@@ -95,7 +95,7 @@ def scrape_to_pdf(base_url, start_chapter, num_chapters):
                     chapter_contents[chapter_num] = chapter_elements  # Store retried chapters
                 except Exception as exc:
                     print(f"Retry failed for {info[0]} with exception: {exc}")
-                    
+
     # Build the PDF with all chapters
     output_filename = f"{novel_title}.pdf"  # Use novel title for the PDF filename
     doc = SimpleDocTemplate(output_filename, pagesize=letter)
@@ -110,7 +110,7 @@ def scrape_to_pdf(base_url, start_chapter, num_chapters):
     print(f"Total operation time: {total_time:.2f} seconds.")
 
 # Example usage
-base_url = 'https://www.lightnovelpub.com/novel/shadow-slave-1365'
+base_url = 'https://testurl'
 start_chapter = 1
 num_chapters = 1578
 scrape_to_pdf(base_url, start_chapter, num_chapters)
