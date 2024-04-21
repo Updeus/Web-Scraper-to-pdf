@@ -32,3 +32,9 @@ def scrape_to_pdf(url, output_filename):
     c.drawText(text)
     c.save()
     print(f"PDF created successfully: {output_filename}")
+
+
+
+url = 'enterurlhere.com'
+output_filename = 'chapter_output.pdf'
+scrape_to_pdf(url, output_filename)
