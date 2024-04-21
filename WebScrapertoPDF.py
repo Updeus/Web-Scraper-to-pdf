@@ -10,15 +10,11 @@ def scrape_to_pdf(url, output_filename):
 
     # Send HTTP request to the URL with custom headers
     response = requests.get(url, headers=headers)
-    response.raise_for_status()  # Raise an exception for HTTP errors
-
-    # Send HTTP request to the URL
-    response = requests.get(url)
-    response.raise_for_status()  
+    response.raise_for_status()  # Raise an exception for HTTP errors if the response isn't successful
 
     # Parse the HTML content
     soup = BeautifulSoup(response.text, 'html.parser')
-    #ensure to enter the name of the div that contains the content you want to scrape
+    # Ensure to enter the name of the div that contains the content you want to scrape
     content_div = soup.find('div', id='chapter-container')
     if content_div is None:
         print("No content found with the specified ID.")
@@ -40,7 +36,6 @@ def scrape_to_pdf(url, output_filename):
     c.drawText(text)
     c.save()
     print(f"PDF created successfully: {output_filename}")
-
 
 # Example usage
 url = 'test.com'
