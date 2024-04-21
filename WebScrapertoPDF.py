@@ -10,7 +10,7 @@ def scrape_to_pdf(url, output_filename):
 
     # Parse the HTML content
     soup = BeautifulSoup(response.text, 'html.parser')
-
+    #ensure to enter the name of the div that contains the content you want to scrape
     content_div = soup.find('div', id='chapter-container')
     if content_div is None:
         print("No content found with the specified ID.")
