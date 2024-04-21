@@ -2,6 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 
 def scrape_to_pdf(url, output_filename):
     headers = {
@@ -14,27 +16,27 @@ def scrape_to_pdf(url, output_filename):
 
     # Parse the HTML content
     soup = BeautifulSoup(response.text, 'html.parser')
+    
     # Ensure to enter the name of the div that contains the content you want to scrape
     content_div = soup.find('div', id='chapter-container')
     if content_div is None:
         print("No content found with the specified ID.")
         return
 
-    # Extract text from the div
-    text_content = content_div.get_text(separator='\n', strip=True)
-    
     # Create a PDF file with the extracted text
-    c = canvas.Canvas(output_filename, pagesize=letter)
-    text = c.beginText(40, 750)
-    text.setFont("Helvetica", 12)
-    text.setLeading(14)
-    
-    # Split the content into lines and add to the PDF
-    for line in text_content.split('\n'):
-        text.textLine(line)
-    
-    c.drawText(text)
-    c.save()
+    doc = SimpleDocTemplate(output_filename, pagesize=letter)
+    Story = []
+    styles = getSampleStyleSheet()
+    style = styles["BodyText"]
+
+    # Iterate through each paragraph and add it to the PDF
+    for para in content_div.find_all('p'):
+        text = para.get_text(strip=True)
+        p = Paragraph(text, style)
+        Story.append(p)
+        Story.append(Spacer(1, 12))  # Adds space after each paragraph
+
+    doc.build(Story)
     print(f"PDF created successfully: {output_filename}")
 
 # Example usage
