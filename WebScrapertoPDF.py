@@ -28,13 +28,14 @@ def scrape_to_pdf(url, output_filename):
     Story = []
     styles = getSampleStyleSheet()
     style = styles["BodyText"]
+    style.leading = 12  # Adjusts the line spacing within paragraphs, decrease as needed
 
     # Iterate through each paragraph and add it to the PDF
     for para in content_div.find_all('p'):
         text = para.get_text(strip=True)
         p = Paragraph(text, style)
         Story.append(p)
-        Story.append(Spacer(1, 12))  # Adds space after each paragraph
+        Story.append(Spacer(1, 2))  # Adjusts space between paragraphs, decrease for less space
 
     doc.build(Story)
     print(f"PDF created successfully: {output_filename}")
