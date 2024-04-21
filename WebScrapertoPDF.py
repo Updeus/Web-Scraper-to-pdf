@@ -3,57 +3,57 @@ from bs4 import BeautifulSoup
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+import time
+from tqdm import tqdm  # Progress bar library
 
-def scrape_to_pdf(url, output_filename):
+def scrape_to_pdf(base_url, start_chapter, num_chapters, output_filename):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
     }
 
-    # Send HTTP request to the URL with custom headers
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()  # Raise an exception for HTTP errors if the response isn't successful
-
-    # Parse the HTML content
-    soup = BeautifulSoup(response.text, 'html.parser')
-
-    # Find the title of the novel and chapter title
-    novel_title = soup.find('a', class_='booktitle').text.strip() if soup.find('a', class_='booktitle') else "Unknown Novel"
-    chapter_title = soup.find('span', class_='chapter-title').text.strip() if soup.find('span', class_='chapter-title') else "Unknown Chapter"
-
-    # Find the content division
-    content_div = soup.find('div', id='chapter-container')
-    if content_div is None:
-        print("No content found with the specified ID.")
-        return
-
-    # Create a PDF file with the extracted text
     doc = SimpleDocTemplate(output_filename, pagesize=letter)
     Story = []
     styles = getSampleStyleSheet()
-    
-    # Title styles
-    title_style = ParagraphStyle('TitleStyle', parent=styles['Title'], fontSize=18, spaceAfter=6, alignment=1)  # Centered
-    chapter_style = ParagraphStyle('ChapterStyle', parent=styles['Title'], fontSize=16, spaceBefore=12, spaceAfter=12, alignment=1)  # Centered
 
-    # Add novel title and chapter title to the document
-    Story.append(Paragraph(novel_title, title_style))
-    Story.append(Paragraph(chapter_title, chapter_style))
+    for i in tqdm(range(start_chapter, start_chapter + num_chapters)):
+        chapter_url = f"{base_url}/chapter-{i}"
+        response = requests.get(chapter_url, headers=headers)
+        try:
+            response.raise_for_status()  # Raise an exception for HTTP errors
+            soup = BeautifulSoup(response.text, 'html.parser')
 
-    # Normal text style
-    style = styles["BodyText"]
-    style.leading = 12  # Adjusts the line spacing within paragraphs
+            # Title extraction and formatting
+            novel_title = soup.find('a', class_='booktitle').text.strip() if soup.find('a', class_='booktitle') else "Unknown Novel"
+            chapter_title = soup.find('div', class_='chapter-title').text.strip() if soup.find('div', class_='chapter-title') else f"Chapter {i}"
 
-    # Iterate through each paragraph and add it to the PDF
-    for para in content_div.find_all('p'):
-        text = para.get_text(strip=True)
-        p = Paragraph(text, style)
-        Story.append(p)
-        Story.append(Spacer(1, 3))  # Adjusts space between paragraphs
+            title_style = ParagraphStyle('TitleStyle', parent=styles['Title'], fontSize=18, spaceAfter=6, alignment=1)
+            chapter_style = ParagraphStyle('ChapterStyle', parent=styles['Title'], fontSize=16, spaceBefore=12, spaceAfter=12, alignment=1)
+
+            if i == start_chapter:  # Only add the novel title for the first chapter
+                Story.append(Paragraph(novel_title, title_style))
+            Story.append(Paragraph(chapter_title, chapter_style))
+
+            # Content extraction and formatting
+            content_div = soup.find('div', id='chapter-container')
+            if content_div:
+                style = styles["BodyText"]
+                style.leading = 12
+                for para in content_div.find_all('p'):
+                    text = para.get_text(strip=True)
+                    p = Paragraph(text, style)
+                    Story.append(p)
+                    Story.append(Spacer(1, 3))
+
+            time.sleep(1)  # Delay to prevent being flagged as a bot
+        except requests.HTTPError as e:
+            print(f"Failed to download {chapter_url}: {e}")
 
     doc.build(Story)
     print(f"PDF created successfully: {output_filename}")
 
 # Example usage
-url = 'test.com'
-output_filename = 'chapter_output.pdf'
-scrape_to_pdf(url, output_filename)
+base_url = 'https://www.testsite'
+start_chapter = 1
+num_chapters = 5
+output_filename = 'story.pdf'
+scrape_to_pdf(base_url, start_chapter, num_chapters, output_filename)
