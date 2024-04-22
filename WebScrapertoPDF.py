@@ -3,10 +3,19 @@ from bs4 import BeautifulSoup
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 import random
 import time
-from tqdm import tqdm  # Progress bar library
+from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import os
+
+# Define the absolute path to the font
+font_path = os.path.join('C:\\Users\\jarod\\Desktop\\Projects\\Web Scraper to pdf', 'DroidSansFallback.ttf')
+
+# Register the font using the absolute path
+pdfmetrics.registerFont(TTFont('DroidSansFallback', font_path))
 
 def fetch_chapter(chapter_url, headers, delay, retry=0):
     time.sleep(delay)  # Implement the delay
@@ -25,33 +34,25 @@ def fetch_chapter(chapter_url, headers, delay, retry=0):
 
 def process_chapter(chapter_html, styles, chapter_num):
     soup = BeautifulSoup(chapter_html, 'html.parser')
-
-    # Extract titles and contents
     chapter_title = soup.find('span', class_='chapter-title').text.strip() if soup.find('span', class_='chapter-title') else f"Chapter {chapter_num}"
     content_div = soup.find('div', id='chapter-container')
+    novel_title = soup.find('a', class_='booktitle').text.strip() if soup.find('a', class_='booktitle') else "Unknown Novel"
 
-    # Extract novel title if first chapter
-    if chapter_num == 1:
-        novel_title = soup.find('a', class_='booktitle').text.strip() if soup.find('a', class_='booktitle') else "Unknown Novel"
+    # Using registered font
+    title_style = ParagraphStyle('TitleStyle', parent=styles['Title'], fontName='DroidSansFallback', fontSize=18, spaceAfter=6, alignment=1)
+    chapter_style = ParagraphStyle('ChapterStyle', parent=styles['Title'], fontName='DroidSansFallback', fontSize=16, spaceBefore=12, spaceAfter=12, alignment=1)
+    story = [Paragraph(novel_title, title_style) if chapter_num == 1 else Paragraph(chapter_title, chapter_style)]
 
-    # Formatting styles
-    title_style = ParagraphStyle('TitleStyle', parent=styles['Title'], fontSize=18, spaceAfter=6, alignment=1)
-    chapter_style = ParagraphStyle('ChapterStyle', parent=styles['Title'], fontSize=16, spaceBefore=12, spaceAfter=12, alignment=1)
-    story = [Paragraph(chapter_title, chapter_style)]
-
-    # Add novel title for the first chapter
-    if chapter_num == 1:
-        story.insert(0, Paragraph(novel_title, title_style))
-
-    # Process content
     if content_div:
         style = styles["BodyText"]
+        style.fontName = 'DroidSansFallback'  # Apply the CJK-compatible font to the body text
         style.leading = 12
         for para in content_div.find_all('p'):
             text = para.get_text(strip=True)
             p = Paragraph(text, style)
             story.append(p)
             story.append(Spacer(1, 3))
+
     return chapter_num, story, novel_title if chapter_num == 1 else None
 
 def scrape_to_pdf(base_url, start_chapter, num_chapters):
@@ -110,7 +111,7 @@ def scrape_to_pdf(base_url, start_chapter, num_chapters):
     print(f"Total operation time: {total_time:.2f} seconds.")
 
 # Example usage
-base_url = 'https://testurl'
+base_url = 'https://www.lightnovelpub.com/novel/reverend-insanity-172'
 start_chapter = 1
-num_chapters = 10
+num_chapters = 2
 scrape_to_pdf(base_url, start_chapter, num_chapters)
