@@ -68,7 +68,7 @@ def scrape_to_pdf(base_url, start_chapter, num_chapters):
     chapters_info = [(f"{base_url}/chapter-{i}", i, delays[i - start_chapter]) for i in range(start_chapter, start_chapter + num_chapters)]
 
     # Using ThreadPoolExecutor to manage threading
-    with ThreadPoolExecutor(max_workers=6) as executor:
+    with ThreadPoolExecutor(max_workers=10) as executor:
         future_to_info = {executor.submit(fetch_chapter, info[0], headers, info[2]): info for info in chapters_info}
         for future in tqdm(as_completed(future_to_info), total=len(chapters_info), desc="Downloading Chapters", unit="chapter"):
             info = future_to_info[future]
@@ -85,7 +85,7 @@ def scrape_to_pdf(base_url, start_chapter, num_chapters):
     # Retry failed chapters
     if failed_chapters:
         print("Retrying failed chapters...")
-        with ThreadPoolExecutor(max_workers=6) as executor:
+        with ThreadPoolExecutor(max_workers=1) as executor: #set workers to lowest number possible as failsafe
             retry_future_to_info = {executor.submit(fetch_chapter, info[0], headers, 10): info for info in failed_chapters}  # Increased delay for retry
             for future in tqdm(as_completed(retry_future_to_info), total=len(retry_future_to_info), desc="Retrying Chapters", unit="chapter"):
                 info = retry_future_to_info[future]
@@ -95,7 +95,7 @@ def scrape_to_pdf(base_url, start_chapter, num_chapters):
                     chapter_contents[chapter_num] = chapter_elements  # Store retried chapters
                 except Exception as exc:
                     print(f"Retry failed for {info[0]} with exception: {exc}")
-
+                    
     # Build the PDF with all chapters
     output_filename = f"{novel_title}.pdf"  # Use novel title for the PDF filename
     doc = SimpleDocTemplate(output_filename, pagesize=letter)
@@ -112,5 +112,5 @@ def scrape_to_pdf(base_url, start_chapter, num_chapters):
 # Example usage
 base_url = 'https://testurl'
 start_chapter = 1
-num_chapters = 1578
+num_chapters = 10
 scrape_to_pdf(base_url, start_chapter, num_chapters)
