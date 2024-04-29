@@ -11,7 +11,7 @@ from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 
-# Define the absolute path to the font
+# Define the absolute path to the font, make sure to download a ttf font that has support for Asian languages
 font_path = os.path.join('C:\\Users\\jarod\\Desktop\\Projects\\Web Scraper to pdf', 'DroidSansFallback.ttf')
 
 # Register the font using the absolute path
@@ -62,7 +62,7 @@ def scrape_to_pdf(base_url, start_chapter, num_chapters):
     styles = getSampleStyleSheet()
     chapter_contents = {}  # Dictionary to store chapter content by chapter number
     failed_chapters = []   # List to store failed chapter fetch attempts
-    delays = [random.randint(1, 5) for _ in range(num_chapters)]
+    delays = [random.randint(1, 3) for _ in range(num_chapters)]
     start_time = time.time()  # Start timing the operation
     novel_title = "Unknown Novel"
 
@@ -112,6 +112,6 @@ def scrape_to_pdf(base_url, start_chapter, num_chapters):
 
 # Example usage
 base_url = 'https://www.lightnovelpub.com/novel/reverend-insanity-172'
-start_chapter = 1
-num_chapters = 2
+start_chapter = 2250
+num_chapters = 74
 scrape_to_pdf(base_url, start_chapter, num_chapters)
