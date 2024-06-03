@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 
 # Define the absolute path to the font, make sure to download a ttf font that has support for Asian languages
-font_path = os.path.join('C:\\Users\\jarod\\Desktop\\Projects\\Web Scraper to pdf', 'DroidSansFallback.ttf')
+font_path = os.path.join('C:\\Users\\Updeus\\Desktop\\Projects\\Web Scraper to pdf', 'DroidSansFallback.ttf')
 
 # Register the font using the absolute path
 pdfmetrics.registerFont(TTFont('DroidSansFallback', font_path))
